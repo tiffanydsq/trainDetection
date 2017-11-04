@@ -23,16 +23,17 @@ int main(int argc,char **argv){
     int end_frame=atoi(argv[4]);
     int num_frame=capture.get(CAP_PROP_FRAME_COUNT);
     Mat output_mask;
-    int key = 0;
     int cnt=0;
-    while (key != 'q')
+    while (1)
     {
         Mat img_input;
         capture >> img_input;
         cnt++;
         
-        if(!img_input.data)
-            cerr << "Error loading image!" << endl;
+        if (img_input.empty()) 
+        {
+            break;  
+        }
 
         if (cnt>start_frame)
         {
@@ -40,13 +41,12 @@ int main(int argc,char **argv){
             output_mask=output_mask+img_input/(end_frame-start_frame);
         }
         
-        
-
         if(cnt>end_frame) 
             break;
         // imshow("Display frame", img_input);
 
-        key = cvWaitKey(33);
+        if (cvWaitKey(30)=='q') 
+            break;
     }
     output_mask.convertTo(output_mask, CV_8UC3);
     cvtColor(output_mask,output_mask,CV_RGB2GRAY);    
