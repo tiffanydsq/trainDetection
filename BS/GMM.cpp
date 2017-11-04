@@ -13,76 +13,70 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
-    std::cout << "Using OpenCV " << CV_MAJOR_VERSION << "." << CV_MINOR_VERSION << "." << CV_SUBMINOR_VERSION << std::endl;
-
-    VideoCapture capture;
-
-    if (argc > 1)
+    // cout << "Using OpenCV " << CV_MAJOR_VERSION << "." << CV_MINOR_VERSION << "." << CV_SUBMINOR_VERSION << endl;
+    
+    // check command
+    if (argc!=4)
     {
-        std::cout << "Openning: " << argv[1] << std::endl;
-        capture.open(argv[1]);
-    }
-    else
-        capture.open(0);
-
-    if (!capture.isOpened())
-    {
-        std::cerr << "Cannot initialize video!" << std::endl;
+        cout << "Input format: ./GMM input_image_dir RoImask_path output_video_path > redirect.log" << endl;
         return -1;
     }
 
-    string inputname=argv[1];
-    VideoWriter video_output(inputname.substr(0,inputname.find_last_of('.'))+string("_fg_MOG2.avi"),
+    vector<String> image_names;
+    glob(argv[1]+string("/*.jpg"), image_names);
+    Mat RoI_mask=imread(argv[2], 0);
+
+    cout<<"input_image_dir: "<<argv[1]<<endl;
+    cout<<"RoImask_path: "<<argv[2]<<endl;
+    cout<<"output_video_path: "<<argv[3]<<endl;
+    Mat frame=imread(image_names[0]);
+    VideoWriter video_output(argv[3],
         CV_FOURCC('M','J','P','G'), 
-        capture.get(CV_CAP_PROP_FPS), 
-        Size(capture.get(CV_CAP_PROP_FRAME_WIDTH),capture.get(CV_CAP_PROP_FRAME_HEIGHT)));
+        5, 
+        Size(frame.cols,frame.rows) 
+    );
 
 
-    int key = 0;
-    Mat img_input;
-    Mat img_mask;
     int cnt=0;
     Ptr< BackgroundSubtractor> pMOG=createBackgroundSubtractorMOG2(); //MOG Background subtractor
 
     // namedWindow("FG mask", cv::WINDOW_NORMAL );
     // resizeWindow("FG mask",1200, 800);  
 
-    while (key != 'q')
+    for(string image_name:image_names)
     {
-        capture >> img_input;
-        if (img_input.empty()) break;
+        Mat img_input;
+        Mat img_mask;
 
+        img_input=imread(image_name);
+        if (img_input.empty()) 
+        {
+            cout<< "Error loading current image"<<endl;
+            break;  
+        }
+        cnt++;
+
+        // Foreground detection
         pMOG->apply(img_input, img_mask, 0.1);
-
         threshold(img_mask, img_mask, 200, 255, THRESH_BINARY);
-
         // if(!img_mask.empty())
         //     imshow("FG mask", img_mask);
 
+        // Apply RoI mask and count foreground pixels
+        img_mask.copyTo(img_mask, RoI_mask);
+        // bitwise_and(img_mask, RoI_mask, img_mask);
         Mat white;
         findNonZero	(img_mask,white);
-        cout<< white.cols << "  " << white.rows << endl;
+        cout<<"Frame No."<<cnt<< ", num_pixel=" << white.rows << endl;
         
-        // if(cnt==10){
-        //     cout<< img_mask ;
-        //     cout << endl;
-        //     return 0;
-        // }
-       
-
-        //  process 
+        // output to video
         Mat mask;
         cvtColor(img_mask, mask, COLOR_GRAY2BGR);
         video_output<<mask;
 
-        cnt++;
-        // if(!(cnt%50))
-        cout<<"Frame No."<<cnt<<endl;
-
-        key = cvWaitKey(33);
+        if (cvWaitKey(30)=='q') 
+            break;
     }
-
-    capture.release();
     cvDestroyAllWindows();
 
     return 0;
