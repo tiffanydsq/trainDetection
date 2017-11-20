@@ -67,7 +67,6 @@ int main(int argc, char **argv)
 
         // Foreground detection
         pMOG->apply(img_input, img_mask);
-<<<<<<< HEAD
 
         // Apply RoI mask and count foreground pixels
         int width = frame.cols/num_divid;
@@ -96,28 +95,6 @@ int main(int argc, char **argv)
         video_output<<img_input;
         // if (cvWaitKey(30)=='q') 
         //     break;
-=======
-        threshold(img_mask, img_mask, 200, 255, THRESH_BINARY);
-        // if(!img_mask.empty())
-        //     imshow("FG mask", img_mask);
-
-        // Apply RoI mask and count foreground pixels
-        Mat img_masked;
-        img_mask.copyTo(img_masked, RoI_mask);
-
-        // bitwise_and(img_mask, RoI_mask, img_mask);
-        Mat white;
-        findNonZero(img_masked,white);
-        cout<<"Frame No."<<cnt<< ", num_pixel=" << white.rows << endl;
-        
-        // output to video
-        Mat mask;
-        cvtColor(img_masked, mask, COLOR_GRAY2BGR);
-        video_output<<mask;
-
-        if (cvWaitKey(30)=='q') 
-            break;
->>>>>>> 972e409c3841d08b248489f141f91147526ae1ee
     }
 
     // cvDestroyAllWindows();
