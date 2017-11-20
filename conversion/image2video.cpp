@@ -1,15 +1,11 @@
 #include "opencv2/opencv.hpp"
-// #include <cv.h>
-#include <stdio.h>
+#include <iostream>
 // #include <highgui.h>
 
 using namespace cv;
 using namespace std;
 
-int main(int argc,char **argv){
-    // 2017-10-06T15:41:08.755369_original_image 
-    // VideoCapture cap("c:/fullpath/Image_%03d.png");
-    // VideoCapture cap(inputpath);
+int main(int argc,char **argv){ 
     vector<String> filenames;
     glob(argv[1], filenames);
 
@@ -32,8 +28,8 @@ int main(int argc,char **argv){
         imshow("Display frame", frame);
 
         // Esc key to stop 
-        if(waitKey(30)==27)
-            break;
+        // if(waitKey(30)==27)
+        //     break;
 
     }
 
