@@ -1,11 +1,11 @@
 #include <iostream>
 #include "opencv2/videoio.hpp"
 #include "opencv2/highgui.hpp"
-
 #include "opencv2/core/version.hpp"
-#include <iostream>
 #include <opencv2/opencv.hpp>
 #include <opencv2/video/background_segm.hpp>
+
+#include <ctime>
 
 using namespace cv;
 using namespace std;
@@ -50,8 +50,10 @@ int main(int argc, char **argv)
 
     int num_divid = 10;
     string image_name;
+    clock_t begin = clock();
     for(int cnt = 0; cnt < image_names.size(); cnt++)
     {
+        clock_t current_begin = clock();
         image_name = image_names[cnt];
         Mat img_input;
         Mat img_mask;
@@ -61,9 +63,6 @@ int main(int argc, char **argv)
         {
             break;  
         }
-
-        if (cnt%50 == 0)
-            cout<< "Frame No." << cnt <<endl;
 
         // Foreground detection
         pMOG->apply(img_input, img_mask);
@@ -83,7 +82,6 @@ int main(int argc, char **argv)
             // imshow("stripe_detect", stripe_detect);
             findNonZero	(stripe_detect, white_detect);
             ratio = max(ratio, (float)white_detect.rows/white_mask.rows);
-
         }
         
         // output to video
@@ -95,8 +93,19 @@ int main(int argc, char **argv)
         video_output<<img_input;
         // if (cvWaitKey(30)=='q') 
         //     break;
-    }
 
-    // cvDestroyAllWindows();
+        if (cnt%10 == 0){
+            cout<< "Frame No." << cnt <<endl;
+            clock_t current_end = clock();
+            double current_elapsed_secs = double(current_end - current_begin) / CLOCKS_PER_SEC;
+            cout<< "Time elapsed: "<< current_elapsed_secs << "ms." <<endl;
+        }
+    }
+    clock_t end = clock();
+    double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+    double average_secs = elapsed_secs / image_names.size();
+    cout<< "Average time elapsed per frame is"<< average_secs << "ms." <<endl;
+    
+
     return 0;
 }
