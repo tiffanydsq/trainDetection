@@ -5,7 +5,7 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/video/background_segm.hpp>
 
-#include <ctime>
+#include <chrono>
 
 using namespace cv;
 using namespace std;
@@ -39,21 +39,28 @@ int main(int argc, char **argv)
     int cnt=0;
     Ptr< BackgroundSubtractor> pMOG=createBackgroundSubtractorMOG2(1000, 16, false); //MOG Background subtractor
 
-    // namedWindow("FG mask", cv::WINDOW_NORMAL );
+    // namedWindow("FG mask", WINDOW_NORMAL );
     // resizeWindow("FG mask",1200, 800);  
 
-    // namedWindow("stripe_mask", cv::WINDOW_NORMAL );
-    // resizeWindow("stripe_mask",1200, 800); 
-
-    // namedWindow("stripe_detect", cv::WINDOW_NORMAL );
-    // resizeWindow("stripe_detect",1200, 800); 
-
     int num_divid = 10;
+    int width = frame.cols/num_divid;
+    int num_pixel_mask[num_divid];
+    vector<Mat> stripe_masks;
+    for (int i = 0; i < num_divid; i++)
+    {
+        Mat white_mask;
+        Mat stripe_mask(frame.rows, width, CV_8UC1, Scalar(0, 0, 0));
+        stripe_mask = RoI_mask(Rect(width*i, 0, width, frame.rows));
+        stripe_masks.push_back(stripe_mask);
+        findNonZero	(stripe_mask, white_mask);
+        num_pixel_mask[i] = white_mask.rows;
+    }
+    
     string image_name;
-    clock_t begin = clock();
+    auto begin = chrono::system_clock::now();
     for(int cnt = 0; cnt < image_names.size(); cnt++)
     {
-        clock_t current_begin = clock();
+        // auto current_begin = chrono::system_clock::now();
         image_name = image_names[cnt];
         Mat img_input;
         Mat img_mask;
@@ -68,44 +75,45 @@ int main(int argc, char **argv)
         pMOG->apply(img_input, img_mask);
 
         // Apply RoI mask and count foreground pixels
-        int width = frame.cols/num_divid;
         float ratio = 0;
         for (int i = 0; i < num_divid; i++)
         {
-            Mat stripe_detect, white_mask, white_detect;
-            Mat stripe_mask(frame.rows, frame.cols, CV_8UC1, Scalar(0, 0, 0));
-            Mat stripe_roi = RoI_mask(Rect(width*i, 0, width, frame.rows));
-            stripe_roi.copyTo(stripe_mask(Rect(width*i, 0, width, frame.rows)));
-            // imshow("stripe_mask", stripe_mask);
-            findNonZero	(stripe_mask, white_mask);
-            img_mask.copyTo(stripe_detect, stripe_mask);
-            // imshow("stripe_detect", stripe_detect);
-            findNonZero	(stripe_detect, white_detect);
-            ratio = max(ratio, (float)white_detect.rows/white_mask.rows);
+
+            Mat white_detect, stripe_detect_masked;
+            Mat stripe_detect(frame.rows, width, CV_8UC1, Scalar(0, 0, 0));
+            stripe_detect = img_mask(Rect(width*i, 0, width, frame.rows));
+            stripe_detect.copyTo(stripe_detect_masked, stripe_masks[i]);
+            findNonZero	(stripe_detect_masked, white_detect);
+            ratio = max(ratio, (float)white_detect.rows/num_pixel_mask[i]);
         }
-        
-        // output to video
-        // Mat mask;
-        // cvtColor(img_mask, mask, COLOR_GRAY2BGR);
+
+        // Save to video
         resize(img_input, img_input, Size(frame.cols/scalar,frame.rows/scalar));
         string text = "P=" + to_string(ratio);
+        cout<< "Frame No." << cnt << "\t" << text <<endl;
         putText(img_input, text, Point(100/scalar, 200/scalar), FONT_HERSHEY_COMPLEX, 5/scalar, Scalar(0, 255, 0), 10/scalar);
         video_output<<img_input;
+
+
+
+        //// Display foreground mask
+        // Mat mask;
+        // cvtColor(img_mask, mask, COLOR_GRAY2BGR);
+        // imshow("FG mask", mask);
         // if (cvWaitKey(30)=='q') 
         //     break;
 
-        if (cnt%10 == 0){
-            cout<< "Frame No." << cnt <<endl;
-            clock_t current_end = clock();
-            double current_elapsed_secs = double(current_end - current_begin) / CLOCKS_PER_SEC;
-            cout<< "Time elapsed: "<< current_elapsed_secs << "ms." <<endl;
-        }
+        //// Timer
+        // if (cnt%10 == 0){
+        //     cout<< "Frame No." << cnt <<"\t";
+        //     auto current_end = chrono::system_clock::now();
+        //     chrono::duration<double> current_elapsed_secs = current_end-current_begin;
+        //     cout<< "    Time elapsed: "<< current_elapsed_secs.count() << " s." <<endl;
+        // }
     }
-    clock_t end = clock();
-    double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-    double average_secs = elapsed_secs / image_names.size();
-    cout<< "Average time elapsed per frame is"<< average_secs << "ms." <<endl;
+    auto end = chrono::system_clock::now();
+    chrono::duration<double> elapsed_secs = end - begin;
+    cout<< "Average time elapsed per frame is " << elapsed_secs.count()/ image_names.size() << " s." <<endl;
     
-
     return 0;
 }
