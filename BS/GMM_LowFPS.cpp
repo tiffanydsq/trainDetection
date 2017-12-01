@@ -20,7 +20,7 @@ int main(int argc, char **argv)
     // check command
     if (argc!=4)
     {
-        cout << "Input format: ./GMM input_image_folder RoI_mask_path output_folder ( > redirect.log) " << endl;
+        cout << "Input format: ./GMM_LowFPS input_image_folder RoI_mask_path output_folder ( > redirect.log) " << endl;
         return -1;
     }
     int scalar = 5;
@@ -41,7 +41,7 @@ int main(int argc, char **argv)
     );
 
     int cnt=0;
-    Ptr< BackgroundSubtractor> pMOG=createBackgroundSubtractorMOG2(2000, 20, false); //MOG Background subtractor
+    Ptr< BackgroundSubtractor> pMOG=createBackgroundSubtractorMOG2(800, 20, false); //MOG Background subtractor
 
     // namedWindow("FG mask", WINDOW_NORMAL );
     // resizeWindow("FG mask",1200, 800);  
@@ -51,9 +51,9 @@ int main(int argc, char **argv)
     float width_scalar = 0.9;
     float threshold = 0.3; // ratio of fg pixels
     int ROI_mask_offset_X = 0;
-    int ROI_mask_offset_Y = 688;
+    int ROI_mask_offset_Y = 0; //688;
     int ROI_mask_offset_width = 4112;
-    int ROI_mask_offset_height = 1912;
+    int ROI_mask_offset_height = 3008; //1912;
     ofstream frame_log;
     ofstream detect_log;
     frame_log.open (argv[3]+string("/frame.log"));
